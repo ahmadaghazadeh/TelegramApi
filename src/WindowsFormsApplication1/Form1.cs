@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Newtonsoft.Json;
 using TeleSharp.TL;
 using TeleSharp.TL.Messages;
 using TLSharp.Core;
@@ -105,17 +106,44 @@ namespace WindowsFormsApplication1
         private async void button5_Click(object sender, EventArgs e)
         {
             var myInClause = new string[] { "salamdl", "+989352185069", "09352185069" };
-            var result = await client.GetUserDialogsAsync();
-            var dialogs = await client.GetUserDialogsAsync();
+            var result = (TLDialogs)await client.GetUserDialogsAsync();
+            var chat1 = result.Chats.ToList();
+            var x1= (TLChannel)chat1[0];
+            var chat = result.Chats.ToList()
+                .Where(c => c.GetType() == typeof(TLChannel))
+                .Cast<TLChannel>()
+                .FirstOrDefault(x => myInClause.Contains(x.Username));
 
-            var user = result.Chats.ToList()
-                .Where(x => x.GetType() == typeof(TLUser))
-                .Cast<TLUser>()
-                .FirstOrDefault(x => myInClause.Contains(x.T));
-            var xx = await client.GetHistoryAsync(new TLInputPeerUser() { UserId = user.Id }, 1, 100, 10);
+            string output = JsonConvert.SerializeObject(result);
+            MessageBox.Show(output);
+        }
+
+        private async void forward()
+        {
+            List<TLChannel> TargetChannel = new List<TLChannel>();
+
+            TLChannel targetchanel = TargetChannel[0];
+            TLInputPeerChannel cha = new TLInputPeerChannel();
+            cha.ChannelId = targetchanel.Id;
+            cha.AccessHash = (long)targetchanel.AccessHash;
 
 
-         
+            Random rand = new Random();
+
+            TLVector<long> a = new TLVector<long>();
+            a.lists.Add(rand.Next());
+            TLVector<int> b = new TLVector<int>();
+            b.lists.Add(tlMessage.id);
+            TLRequestForwardMessages aa = new TLRequestForwardMessages();
+            aa.FromPeer = peer;
+            aa.ToPeer = cha;
+            aa.RandomId = a;
+            aa.MessageId = tlMessage.id;
+            aa.Id = b;
+            aa.Silent = true;
+            aa.WithMyScore = true;
+
+            TLUpdates rr = await client.SendRequestAsync<TLUpdates>(aa);
         }
     }
 }
